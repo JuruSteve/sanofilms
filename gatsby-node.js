@@ -55,36 +55,37 @@ exports.sourceNodes = async ({
   createContentDigest,
 }) => {
   // getting list of videos
-  const response = await nodeFetch(
-    `${process.env.API_URL}/users/${process.env.USER_ID}/videos`,
-    { headers: { Authorization: `bearer ${process.env.ACCESS_TOKEN}` } }
-  )
-  const { data } = await response.json()
-
-  //   create video source nodes for the graphql data layer
-  data.forEach(video => {
-    const videoNode = {
-      name: video.name,
-      description: video.description,
-      link: video.link,
-      width: video.width,
-      height: video.height,
-      resource_key: video.resource_key,
-      pictures: video.pictures,
-      videoId: parseInt(video.uri.split("/")[2]),
-    }
-    const newNode = {
-      ...videoNode,
-      id: createNodeId(`video-${videoNode.resource_key}`),
-      internal: {
-        type: "Video",
-        contentDigest: createContentDigest({
-          videoNode,
-        }),
-      },
-    }
-    actions.createNode(newNode)
-  })
+  try {
+    const data = await getData("videos")
+    //   create video source nodes for the graphql data layer
+    data.forEach(video => {
+      const videoNode = {
+        name: video.name,
+        description: video.description,
+        embed: video.embed,
+        link: video.link,
+        width: video.width,
+        height: video.height,
+        duration: video.duration,
+        resource_key: video.resource_key,
+        pictures: video.pictures,
+        videoId: parseInt(video.uri.split("/")[2]),
+      }
+      const newNode = {
+        ...videoNode,
+        id: createNodeId(`video-${videoNode.resource_key}`),
+        internal: {
+          type: "Video",
+          contentDigest: createContentDigest({
+            videoNode,
+          }),
+        },
+      }
+      actions.createNode(newNode)
+    })
+  } catch (error) {
+    console.log("error fetching videos from Vimeo", error)
+  }
 }
 
 async function getData(ctx) {
